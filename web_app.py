@@ -10,10 +10,18 @@ from rag_engine import retrieve_context
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+# Keep a stable secret key in production if set in env, otherwise fallback
+app.secret_key = os.getenv("SECRET_KEY", "chicken_bizna_secret_default_key")
 
-# Initialize OpenAI Client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI Client with a strict 15-second network timeout
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    print("WARNING: OPENAI_API_KEY is not set or empty in environment variables!")
+
+client = OpenAI(
+    api_key=api_key,
+    timeout=15.0  # Prevents requests from hanging indefinitely
+)
 
 user_sessions = {}
 
@@ -35,7 +43,11 @@ def get_session_history(session_id: str):
 def generate_bot_reply(user_message: str, session_id: str) -> str:
     """Shared core RAG and OpenAI completion logic."""
     # Retrieve context from ChromaDB
-    context = retrieve_context(user_message)
+    try:
+        context = retrieve_context(user_message)
+    except Exception as e:
+        print(f"Error retrieving RAG context: {e}")
+        context = "No additional context found."
 
     prompt_with_rag = f"""RETRIEVED KNOWLEDGE BASE SNIPPETS:
 {context}
@@ -44,15 +56,27 @@ CUSTOMER QUESTION:
 {user_message}"""
 
     history = get_session_history(session_id)
-    history.append({"role": "user", "content": prompt_with_rag})
+    
+    # Send system instruction + history + current query with context
+    messages_to_send = list(history)
+    messages_to_send.append({"role": "user", "content": prompt_with_rag})
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=history,
+        messages=messages_to_send,
         temperature=0.4,
     )
+    
     bot_reply = response.choices[0].message.content
+    
+    # Store clean conversation history without the massive RAG blocks
+    history.append({"role": "user", "content": user_message})
     history.append({"role": "assistant", "content": bot_reply})
+    
+    # Keep only last 10 exchanges to prevent token explosion
+    if len(history) > 21:
+        user_sessions[session_id] = [history[0]] + history[-20:]
+        
     return bot_reply
 
 @app.route("/")
@@ -61,13 +85,14 @@ def home():
         session["session_id"] = str(uuid.uuid4())
     return render_template("index.html")
 
+@app.route("/chat", methods=["POST"])
 @app.route("/api/chat", methods=["POST"])
 def chat_endpoint():
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     user_message = data.get("message", "").strip()
 
     if not user_message:
-        return jsonify({"error": "Empty message"}), 400
+        return jsonify({"reply": "Please enter a message to begin!"}), 400
 
     session_id = session.get("session_id", "default_guest")
 
@@ -78,12 +103,14 @@ def chat_endpoint():
         print("\n--- DETAILED ERROR TRACEBACK (WEB) ---")
         traceback.print_exc()
         print("--------------------------------------\n")
-        return jsonify({"reply": "I'm having a brief moment of delay. Please feel free to ask again!"}), 500
+        return jsonify({
+            "reply": f"Service temporarily delayed: {str(e)[:120]}"
+        }), 200  # Returns 200 so the UI displays the exact error instead of crashing silently
 
+@app.route("/webhook", methods=["POST"])
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp_webhook():
     """Endpoint for Twilio WhatsApp incoming messages."""
-    # Twilio sends form-encoded parameters: 'Body' (the text) and 'From' (e.g., 'whatsapp:+254754771381')
     user_message = request.values.get("Body", "").strip()
     sender_number = request.values.get("From", "unknown_user")
 
@@ -94,7 +121,6 @@ def whatsapp_webhook():
         return Response(str(resp), mimetype="application/xml")
 
     try:
-        # Use the sender's WhatsApp phone number as their unique session ID
         bot_reply = generate_bot_reply(user_message, sender_number)
         resp.message(bot_reply)
     except Exception as e:
@@ -106,4 +132,5 @@ def whatsapp_webhook():
     return Response(str(resp), mimetype="application/xml")
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=False, use_reloader=False, threaded=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
