@@ -1,160 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chicken Bizna AI Support</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f4f6f8; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        
-        .chat-container {
-            width: 100%;
-            max-width: 450px;
-            height: 90vh;
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chicken Bizna Assistant</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    }
 
-        .chat-header {
-            background: #108548;
-            color: #ffffff;
-            padding: 16px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-        .chat-messages {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+    .chat-container {
+      width: 100%;
+      max-width: 480px;
+      height: 90vh;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
 
-        .message {
-            max-width: 80%;
-            padding: 10px 14px;
-            border-radius: 14px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            word-wrap: break-word;
-        }
+    .chat-header {
+      background-color: #128c7e;
+      color: #ffffff;
+      padding: 16px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .message.bot {
-            align-self: flex-start;
-            background: #eef2f5;
-            color: #333333;
-            border-bottom-left-radius: 2px;
-        }
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background-color: #efeae2;
+    }
 
-        .message.user {
-            align-self: flex-end;
-            background: #108548;
-            color: #ffffff;
-            border-bottom-right-radius: 2px;
-        }
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
 
-        .chat-input-area {
-            display: flex;
-            padding: 12px;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            gap: 8px;
-        }
+    .user-message {
+      align-self: flex-end;
+      background-color: #d9fdd3;
+      color: #111b21;
+      border-top-right-radius: 2px;
+    }
 
-        .chat-input-area input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 1px solid #cbd5e1;
-            border-radius: 24px;
-            outline: none;
-            font-size: 0.95rem;
-        }
+    .bot-message {
+      align-self: flex-start;
+      background-color: #ffffff;
+      color: #111b21;
+      border-top-left-radius: 2px;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.06);
+    }
 
-        .chat-input-area input:focus {
-            border-color: #108548;
-        }
+    .loading-bubble {
+      color: #667781;
+      font-style: italic;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-        .chat-input-area button {
-            background: #108548;
-            color: white;
-            border: none;
-            padding: 0 20px;
-            border-radius: 24px;
-            cursor: pointer;
-            font-weight: 600;
-        }
+    .spinner {
+      animation: spin 1.2s linear infinite;
+      display: inline-block;
+    }
 
-        .chat-input-area button:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-        }
-    </style>
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .chat-input-area {
+      display: flex;
+      padding: 12px;
+      background-color: #f0f2f5;
+      border-top: 1px solid #e0e0e0;
+      gap: 8px;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #ccc;
+      border-radius: 24px;
+      outline: none;
+      font-size: 0.95rem;
+    }
+
+    .chat-input-area input:focus {
+      border-color: #128c7e;
+    }
+
+    .chat-input-area button {
+      background-color: #128c7e;
+      color: #ffffff;
+      border: none;
+      padding: 0 18px;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .chat-input-area button:disabled {
+      background-color: #9cb4af;
+      cursor: not-allowed;
+    }
+
+    .chat-input-area button:hover:not(:disabled) {
+      background-color: #075e54;
+    }
+  </style>
 </head>
 <body>
 
-<div class="chat-container">
-    <div class="chat-header">Chicken Bizna Virtual Assistant</div>
-    
-    <div class="chat-messages" id="chatMessages">
-        <div class="message bot">Hello! Welcome to Chicken Bizna. How can I help you today?</div>
+  <div class="chat-container">
+    <div class="chat-header">
+      <span>🐔</span>
+      <span>Chicken Bizna Support</span>
     </div>
 
-    <form class="chat-input-area" id="chatForm">
-        <input type="text" id="userInput" placeholder="Ask about chicks, feeds, pricing..." autocomplete="off" required />
-        <button type="submit" id="sendBtn">Send</button>
-    </form>
-</div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="message bot-message">
+        Hello! Welcome to Chicken Bizna. Feel free to ask about our chicks, feeds, management guides, or prices!
+      </div>
+    </div>
 
-<script>
-    const form = document.getElementById('chatForm');
-    const input = document.getElementById('userInput');
-    const messages = document.getElementById('chatMessages');
-    const sendBtn = document.getElementById('sendBtn');
+    <div class="chat-input-area">
+      <input type="text" id="user-input" placeholder="Type a message..." autocomplete="off" />
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
 
-    function appendMessage(text, sender) {
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message', sender);
-        msgDiv.innerText = text;
-        messages.appendChild(msgDiv);
-        messages.scrollTop = messages.scrollHeight;
-    }
+  <script>
+    const inputEl = document.getElementById("user-input");
+    const chatBox = document.getElementById("chat-messages");
+    const sendBtn = document.getElementById("send-btn");
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const query = input.value.trim();
-        if (!query) return;
-
-        appendMessage(query, 'user');
-        input.value = '';
-        input.disabled = true;
-        sendBtn.disabled = true;
-
-        try {
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: query })
-            });
-
-            const data = await res.json();
-            appendMessage(data.reply || data.error, 'bot');
-        } catch (err) {
-            appendMessage("Error communicating with server.", 'bot');
-        } finally {
-            input.disabled = false;
-            sendBtn.disabled = false;
-            input.focus();
-        }
+    inputEl.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !sendBtn.disabled) {
+        sendMessage();
+      }
     });
-</script>
 
+    async function sendMessage() {
+      const userMessage = inputEl.value.trim();
+      if (!userMessage) return;
+
+      // Disable inputs while processing
+      inputEl.value = "";
+      inputEl.disabled = true;
+      sendBtn.disabled = true;
+
+      // 1. Render user message
+      const userDiv = document.createElement("div");
+      userDiv.className = "message user-message";
+      userDiv.textContent = userMessage;
+      chatBox.appendChild(userDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // 2. Render loading indicator
+      const loadingId = "loader-" + Date.now();
+      const botLoadingDiv = document.createElement("div");
+      botLoadingDiv.className = "message bot-message";
+      botLoadingDiv.id = loadingId;
+      botLoadingDiv.innerHTML = `
+        <span class="loading-bubble">
+          Generating response... <span class="spinner">⏳</span>
+        </span>
+      `;
+      chatBox.appendChild(botLoadingDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // 3. Send request to backend
+      try {
+        const endpoint = window.location.origin + "/api/chat";
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({ message: userMessage })
+        });
+
+        const placeholder = document.getElementById(loadingId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errMsg = errorData.reply || `Server responded with status ${response.status}`;
+          if (placeholder) {
+            placeholder.textContent = errMsg;
+          }
+        } else {
+          const data = await response.json();
+          if (placeholder) {
+            placeholder.textContent = data.reply || "No reply content received.";
+          }
+        }
+      } catch (error) {
+        console.error("Network or fetch error:", error);
+        const placeholder = document.getElementById(loadingId);
+        if (placeholder) {
+          placeholder.textContent = "Connection failed. Please ensure the server is online and try again.";
+        }
+      } finally {
+        inputEl.disabled = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    }
+  </script>
 </body>
 </html>
